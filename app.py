@@ -2,6 +2,9 @@ from flask import Flask, render_template, request, redirect, url_for, session
 from haiku_data import season_words_by_season, themes_by_emotion
 from openai import OpenAI
 import random
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
 # OpenAI API設定
 client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
@@ -183,6 +186,8 @@ def revise_haiku():
                            haiku=new_haiku,
                            haiku_furigana=new_furigana,
                            haiku_reading=new_reading)
+
+print("APIキー：", os.environ.get("OPENAI_API_KEY"))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
