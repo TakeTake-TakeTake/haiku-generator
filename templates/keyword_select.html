@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>俳句ジェネレーター｜季語とテーマの選択</title>
+  <style>
+    body {
+      opacity: 0;
+      transition: opacity 0.6s ease-in-out;
+      font-family: "Yu Mincho", "Hiragino Mincho Pro", "MS PMincho", serif;
+      background-color: #fafafa;
+      color: #333;
+      padding: 2em;
+      margin: 0;
+      line-height: 1.8;
+    }
+
+    body.fade-in {
+      opacity: 1;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 1.5em;
+      margin-bottom: 1em;
+    }
+
+    .section-box {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 2em;
+      background-color: #f9f9f9;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+
+    .info-box {
+      margin-bottom: 1.5em;
+    }
+
+    label {
+      font-weight: bold;
+    }
+
+    .keyword-list {
+      margin-bottom: 1.5em;
+    }
+
+    button {
+      width: 100%;
+      padding: 0.8em;
+      font-size: 1rem;
+      background-color: #f5e8d0;
+      color: #333;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 1em;
+    }
+
+    button:hover {
+      background-color: #e8d6b4;
+    }
+
+    .nav-links {
+      text-align: center;
+      margin-top: 2em;
+    }
+
+    a {
+      text-decoration: none;
+      color: #0055aa;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    @media screen and (max-width: 600px) {
+      .section-box {
+        padding: 1em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>俳句ジェネレーター</h1>
+
+  <div class="section-box">
+    <div class="info-box">
+      <p><strong>季節：</strong>{{ season }}</p>
+      <p><strong>感情：</strong>{{ emotion }}</p>
+    </div>
+
+    <form action="/generate_haiku" method="post">
+      <div class="keyword-list">
+        <h3>季語の候補（5つ）</h3>
+        {% for word in season_words %}
+          <label><input type="radio" name="selected_season_word" value="{{ word }}" required> {{ word }}</label><br>
+        {% endfor %}
+      </div>
+
+      <div class="keyword-list">
+        <h3>テーマの候補（5つ）</h3>
+        {% for theme in themes %}
+          <label><input type="radio" name="selected_theme" value="{{ theme }}" required> {{ theme }}</label><br>
+        {% endfor %}
+      </div>
+
+      <button type="submit">この季語とテーマで俳句を生成する</button>
+    </form>
+
+    <form action="/refresh_keywords" method="post">
+      <button type="submit">別の候補を提案する</button>
+    </form>
+  </div>
+
+  <div class="nav-links">
+    <a href="/">← 季節／感情選択に戻る</a>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      document.body.classList.add("fade-in");
+    });
+  </script>
+</body>
+</html>

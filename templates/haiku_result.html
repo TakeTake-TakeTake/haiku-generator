@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>生成された俳句</title>
+  <style>
+    body {
+      font-family: "Yu Mincho", "Hiragino Mincho Pro", "MS PMincho", serif;
+      background-color: #fafafa;
+      padding: 2em;
+      margin: 0;
+    }
+
+    .container {
+      max-width: 640px;
+      margin: auto;
+      padding: 1em;
+    }
+
+    .haiku-horizontal {
+      font-size: 1.8rem;
+      text-align: center;
+      margin: 2em 0;
+      font-weight: bold;
+    }
+
+    .ku {
+      margin-right: 1.2em;
+      display: inline-block;
+    }
+
+    ruby rt {
+      font-size: 0.9rem;
+      color: #666;
+    }
+
+    .info, .controls {
+      text-align: center;
+      margin-bottom: 2em;
+    }
+
+    button {
+      padding: 0.7em 1.4em;
+      font-size: 1rem;
+      background-color: #f5e8d0;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #e8d6b4;
+    }
+
+    a {
+      color: #0055aa;
+      text-decoration: none;
+      margin: 0 1em;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    .feedback-box {
+      text-align: center;
+      margin-top: 2em;
+    }
+
+    textarea {
+      width: 90%;
+      max-width: 500px;
+      height: 80px;
+      padding: 0.6em;
+      font-size: 1rem;
+      margin-bottom: 1em;
+    }
+
+    @media screen and (max-width: 600px) {
+      .haiku-horizontal {
+        font-size: 1.4rem;
+      }
+      button {
+        width: 90%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="info">
+      <h2>生成された俳句</h2>
+      <p><strong>季節：</strong>{{ season }}</p>
+      <p><strong>季語：</strong>{{ season_word }}</p>
+      <p><strong>感情：</strong>{{ emotion }}</p>
+      <p><strong>テーマ：</strong>{{ theme }}</p>
+    </div>
+
+    <div class="haiku-horizontal">
+      {{ haiku_furigana | safe }}
+    </div>
+
+    <div class="controls">
+      <button onclick="showFinalView()">🖼️ 俳句確定＆朗読する</button>
+    </div>
+
+    <!-- 🔁 フィードバック機能 -->
+    <div class="feedback-box">
+      <form method="POST" action="/revise_haiku">
+        <p>俳句に対するご感想や修正希望があればご記入ください：</p>
+        <textarea name="feedback" placeholder="例：もっと悲しい雰囲気にしてほしい"></textarea><br>
+        <button type="submit">このコメントで再生成</button>
+      </form>
+    </div>
+
+    <!-- 🔚 ナビゲーションリンク -->
+    <div class="controls">
+      <a href="/show_keywords">← 季語／テーマ選択に戻る</a>
+      <a href="/">← 季節／感情選択に戻る</a>
+    </div>
+  </div>
+
+  <script>
+    function showFinalView() {
+      const furigana = {{ haiku_furigana | default('""', true) | tojson }};
+      const reading = {{ haiku_reading | default('""', true) | tojson }};
+
+      const newWin = window.open("", "_blank", "width=900,height=300");
+      newWin.document.write(`
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <title>あなたの俳句</title>
+          <style>
+            body {
+              font-family: 'Yu Mincho', 'Hiragino Mincho Pro', 'MS PMincho', serif;
+              background-color: #fafafa;
+              color: #222;
+              text-align: center;
+              padding: 2em;
+              margin: 0;
+            }
+            .haiku {
+              font-size: 2.4rem;
+              font-weight: bold;
+              margin-bottom: 2em;
+            }
+            ruby rt {
+              font-size: 0.9rem;
+              color: #666;
+            }
+            button {
+              padding: 0.6em 1.2em;
+              font-size: 1rem;
+              background-color: #f5e8d0;
+              border: none;
+              border-radius: 6px;
+              cursor: pointer;
+            }
+            button:hover {
+              background-color: #e8d6b4;
+            }
+          </style>
+        </head>
+        <body>
+          <h2 style="font-size: 1.2rem;">あなたの俳句</h2>
+          <p class="haiku">${furigana}</p>
+          <button onclick="window.close()">このウィンドウを閉じる</button>
+        </body>
+        </html>
+      `);
+
+      const utterance = new SpeechSynthesisUtterance(reading);
+      utterance.lang = 'ja-JP';
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utterance);
+    }
+  </script>
+    }

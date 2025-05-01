@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>俳句ジェネレーター｜季節と感情の選択</title>
+  <style>
+    body {
+      opacity: 0;
+      transition: opacity 0.6s ease-in-out;
+      font-family: "Yu Mincho", "Hiragino Mincho Pro", "MS PMincho", serif;
+      background-color: #fafafa;
+      color: #333;
+      padding: 2em;
+      line-height: 1.8;
+      margin: 0;
+    }
+
+    body.fade-in {
+      opacity: 1;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 1.5em;
+      margin-bottom: 1em;
+    }
+
+    .form-box {
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 2em;
+      background-color: #f9f9f9;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+
+    label {
+      font-weight: bold;
+    }
+
+    select, button {
+      width: 100%;
+      padding: 0.8em;
+      font-size: 1rem;
+      margin-top: 0.5em;
+      margin-bottom: 1.5em;
+      box-sizing: border-box;
+    }
+
+    button {
+      background-color: #f5e8d0;
+      color: #333;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #e8d6b4;
+    }
+
+    @media screen and (max-width: 600px) {
+      body {
+        padding: 1em;
+      }
+      .form-box {
+        padding: 1em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>俳句ジェネレーター</h1>
+
+  <div class="form-box">
+    <form action="/select_keywords" method="post">
+      <label for="season">季節を選んでください：</label>
+      <select name="season" id="season" required>
+        <option value="">--選択してください--</option>
+        <option value="春">春</option>
+        <option value="夏">夏</option>
+        <option value="秋">秋</option>
+        <option value="冬">冬</option>
+      </select>
+
+      <label for="emotion">感情を選んでください：</label>
+      <select name="emotion" id="emotion" required>
+        <option value="">--選択してください--</option>
+        <option value="喜">喜</option>
+        <option value="怒">怒</option>
+        <option value="哀">哀</option>
+        <option value="楽">楽</option>
+      </select>
+
+      <button type="submit">季語とテーマの候補を出す</button>
+    </form>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      document.body.classList.add("fade-in");
+    });
+  </script>
+</body>
+</html>
