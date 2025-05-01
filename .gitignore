@@ -1,0 +1,9 @@
+# セキュリティに関するファイル
+.env
+
+# Pythonのキャッシュ
+__pycache__/
+*.pyc
+
+# VSCodeの個人設定（任意）
+.vscode/
