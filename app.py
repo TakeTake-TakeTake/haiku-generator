@@ -3,47 +3,15 @@ from haiku_data import season_words_by_season, themes_by_emotion
 from openai import OpenAI
 import random
 import os
+import re
 from dotenv import load_dotenv
+
 load_dotenv()
 
-# OpenAI API設定
 client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
-
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-@app.route('/select_keywords', methods=['POST'])
-def select_keywords():
-    season = request.form.get('season')
-    emotion = request.form.get('emotion')
-    session['season'] = season
-    session['emotion'] = emotion
-    return redirect(url_for('show_keywords'))
-
-@app.route('/show_keywords')
-def show_keywords():
-    season = session.get('season')
-    emotion = session.get('emotion')
-
-    season_words = random.sample(season_words_by_season.get(season, []), 5)
-    themes = random.sample(themes_by_emotion.get(emotion, []), 5)
-
-    session['season_words'] = season_words
-    session['themes'] = themes
-
-    return render_template('keyword_select.html',
-                           season_words=season_words,
-                           themes=themes,
-                           season=season,
-                           emotion=emotion)
-
-@app.route('/refresh_keywords', methods=['POST'])
-def refresh_keywords():
-    return redirect(url_for('show_keywords'))
 
 def generate_furigana_and_reading(text):
     prompt = f"""
@@ -58,7 +26,6 @@ def generate_furigana_and_reading(text):
 句3: 光/ひかり の/の 道/みち
 読み: はるがすみ やまのむこうに ひかりのみち
 """
-
     response = client.chat.completions.create(
         model="gpt-4o",
         messages=[
@@ -87,109 +54,101 @@ def generate_furigana_and_reading(text):
 
     return ruby_text.strip(), reading_text.strip()
 
-def is_valid_feedback(feedback):
-    prompt = f"""
-以下のコメントが、俳句に対して具体的な改善・変更の意図を含む指示かどうかを判定してください。単に感想・無意味・ノイズ（例：あああ、いいね等）であれば「NO」と答え、明確な指示や改善要望であれば「YES」と答えてください。
+@app.route('/')
+def index():
+    return render_template('index.html')
 
-コメント: "{feedback}"
+@app.route('/select_keywords', methods=['POST'])
+def select_keywords():
+    season = request.form.get('season')
+    emotion = request.form.get('emotion')
+    session['season'] = season
+    session['emotion'] = emotion
+    session['season_words'] = random.sample(season_words_by_season.get(season, []), 5)
+    session['themes'] = random.sample(themes_by_emotion.get(emotion, []), 5)
+    return redirect(url_for('show_keywords'))
 
-出力はYESまたはNOのみとしてください。
-"""
+@app.route('/show_keywords')
+def show_keywords():
+    season = session.get('season')
+    emotion = session.get('emotion')
+    season_words = session.get('season_words') or random.sample(season_words_by_season.get(season, []), 5)
+    themes = session.get('themes') or random.sample(themes_by_emotion.get(emotion, []), 5)
+    session['season_words'] = season_words
+    session['themes'] = themes
+    return render_template('keyword_select.html', season_words=season_words, themes=themes, season=season, emotion=emotion)
 
-    response = client.chat.completions.create(
-        model="gpt-4o",
-        messages=[{"role": "user", "content": prompt}]
-    )
-    return "YES" in response.choices[0].message.content.upper()
+@app.route('/refresh_season_words', methods=['POST'])
+def refresh_season_words():
+    season = session.get('season')
+    season_words = random.sample(season_words_by_season.get(season, []), 5)
+    session['season_words'] = season_words
+    return redirect(url_for('show_keywords'))
+
+@app.route('/refresh_themes', methods=['POST'])
+def refresh_themes():
+    emotion = session.get('emotion')
+    themes = random.sample(themes_by_emotion.get(emotion, []), 5)
+    session['themes'] = themes
+    return redirect(url_for('show_keywords'))
 
 @app.route('/generate_haiku', methods=['POST'])
 def generate_haiku():
-    season = session.get('season')
-    emotion = session.get('emotion')
-    season_word = request.form.get('selected_season_word')
-    theme = request.form.get('selected_theme')
+    selected_season_word = request.form.get('selected_season_word')
+    selected_theme = request.form.get('selected_theme')
+    if not selected_season_word or not selected_theme:
+        return "季語とテーマを選択してください。"
 
-    prompt = f"""
-季節「{season}」、季語「{season_word}」、感情「{emotion}」、テーマ「{theme}」をもとに、5・7・5の俳句を生成してください。
-俳句のみを出力してください。
-"""
+    prompt = f"季語「{selected_season_word}」とテーマ「{selected_theme}」を含む俳句を1つ生成してください。"
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "あなたは俳句の達人です。"},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        haiku = response.choices[0].message.content.strip()
+        haiku_furigana, haiku_reading = generate_furigana_and_reading(haiku)
+    except Exception as e:
+        haiku = f"エラーが発生しました: {str(e)}"
+        haiku_furigana = haiku
+        haiku_reading = ""
 
-    response = client.chat.completions.create(
-        model="gpt-4o",
-        messages=[{"role": "user", "content": prompt}]
-    )
-
-    haiku = response.choices[0].message.content.strip()
-    haiku_furigana, haiku_reading = generate_furigana_and_reading(haiku)
-
-    session['season_word'] = season_word
-    session['theme'] = theme
-    session['haiku'] = haiku
-    session['haiku_furigana'] = haiku_furigana
-    session['haiku_reading'] = haiku_reading
-
-    return render_template('haiku_result.html',
-                           season=season,
-                           emotion=emotion,
-                           season_word=season_word,
-                           theme=theme,
-                           haiku=haiku,
-                           haiku_furigana=haiku_furigana or "",
-                           haiku_reading=haiku_reading or "")
+    return render_template('haiku_result.html', haiku=haiku, haiku_furigana=haiku_furigana, haiku_reading=haiku_reading, season=session.get('season'), emotion=session.get('emotion'), season_word=selected_season_word, theme=selected_theme)
 
 @app.route('/revise_haiku', methods=['POST'])
 def revise_haiku():
+    haiku = request.form.get('haiku')
     feedback = request.form.get('feedback')
-    season = session.get('season')
-    emotion = session.get('emotion')
-    season_word = session.get('season_word')
-    theme = session.get('theme')
+    selected_season_word = request.form.get('season_word')
+    selected_theme = request.form.get('theme')
 
-    if not is_valid_feedback(feedback):
-        return render_template('haiku_result.html',
-                               season=season,
-                               emotion=emotion,
-                               season_word=season_word,
-                               theme=theme,
-                               haiku=session['haiku'],
-                               haiku_furigana=session['haiku_furigana'],
-                               haiku_reading=session['haiku_reading'])
+    if not feedback:
+        haiku_furigana, haiku_reading = generate_furigana_and_reading(haiku)
+        return render_template('haiku_result.html', haiku=haiku, haiku_furigana=haiku_furigana, haiku_reading=haiku_reading, season=session.get('season'), emotion=session.get('emotion'), season_word=selected_season_word, theme=selected_theme)
 
-    prompt = f"""
-以下の条件に基づいて、俳句を再生成してください：
-- 季節: {season}
-- 感情: {emotion}
-- 季語: {season_word}
-- テーマ: {theme}
-- フィードバックコメント: {feedback}
+    prompt = f"この俳句「{haiku}」に対して、次のフィードバックを受けました：「{feedback}」。フィードバックを反映して俳句を改善してください。"
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "system", "content": "あなたは俳句の達人です。"},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        revised_haiku = response.choices[0].message.content.strip()
+        revised_furigana, revised_reading = generate_furigana_and_reading(revised_haiku)
+    except Exception as e:
+        revised_haiku = f"エラーが発生しました: {str(e)}"
+        revised_furigana = revised_haiku
+        revised_reading = ""
 
-5・7・5の俳句形式を保ちつつ、コメントを反映した改善版を出力してください。
-俳句のみを出力してください。
-"""
-    response = client.chat.completions.create(
-        model="gpt-4o",
-        messages=[{"role": "user", "content": prompt}]
-    )
+    return render_template('haiku_result.html', haiku=revised_haiku, haiku_furigana=revised_furigana, haiku_reading=revised_reading, season=session.get('season'), emotion=session.get('emotion'), season_word=selected_season_word, theme=selected_theme)
 
-    new_haiku = response.choices[0].message.content.strip()
-    new_furigana, new_reading = generate_furigana_and_reading(new_haiku)
-
-    session['haiku'] = new_haiku
-    session['haiku_furigana'] = new_furigana
-    session['haiku_reading'] = new_reading
-
-    return render_template('haiku_result.html',
-                           season=season,
-                           emotion=emotion,
-                           season_word=season_word,
-                           theme=theme,
-                           haiku=new_haiku,
-                           haiku_furigana=new_furigana,
-                           haiku_reading=new_reading)
-
-print("APIキー：", os.environ.get("OPENAI_API_KEY"))
+@app.route('/feedback', methods=['POST'])
+def feedback():
+    return redirect(url_for('index'))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
-
-# --- HTMLファイルはCanvas外で管理中 ---

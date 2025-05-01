@@ -98,23 +98,26 @@
     </div>
 
     <div class="haiku-horizontal">
-      {{ haiku_furigana | safe }}
+      {{ haiku_furigana | default(haiku, true) | safe }}
     </div>
 
     <div class="controls">
       <button onclick="showFinalView()">🖼️ 俳句確定＆朗読する</button>
     </div>
 
-    <!-- 🔁 フィードバック機能 -->
     <div class="feedback-box">
       <form method="POST" action="/revise_haiku">
+        <input type="hidden" name="haiku" value="{{ haiku }}">
+        <input type="hidden" name="season" value="{{ season }}">
+        <input type="hidden" name="season_word" value="{{ season_word }}">
+        <input type="hidden" name="emotion" value="{{ emotion }}">
+        <input type="hidden" name="theme" value="{{ theme }}">
         <p>俳句に対するご感想や修正希望があればご記入ください：</p>
         <textarea name="feedback" placeholder="例：もっと悲しい雰囲気にしてほしい"></textarea><br>
         <button type="submit">このコメントで再生成</button>
       </form>
     </div>
 
-    <!-- 🔚 ナビゲーションリンク -->
     <div class="controls">
       <a href="/show_keywords">← 季語／テーマ選択に戻る</a>
       <a href="/">← 季節／感情選択に戻る</a>
@@ -123,7 +126,7 @@
 
   <script>
     function showFinalView() {
-      const furigana = {{ haiku_furigana | default('""', true) | tojson }};
+      const furigana = {{ haiku_furigana | default(haiku, true) | tojson }};
       const reading = {{ haiku_reading | default('""', true) | tojson }};
 
       const newWin = window.open("", "_blank", "width=900,height=300");
@@ -178,4 +181,5 @@
       window.speechSynthesis.speak(utterance);
     }
   </script>
-    }
+</body>
+</html>

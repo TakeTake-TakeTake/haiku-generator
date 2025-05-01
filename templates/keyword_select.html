@@ -94,27 +94,25 @@
       <p><strong>感情：</strong>{{ emotion }}</p>
     </div>
 
-    <form action="/generate_haiku" method="post">
-      <div class="keyword-list">
-        <h3>季語の候補（5つ）</h3>
-        {% for word in season_words %}
-          <label><input type="radio" name="selected_season_word" value="{{ word }}" required> {{ word }}</label><br>
-        {% endfor %}
-      </div>
+    <form method="post">
+  <div class="keyword-list">
+    <h3>季語の候補（5つ）</h3>
+    {% for word in season_words %}
+      <label><input type="radio" name="selected_season_word" value="{{ word }}" required> {{ word }}</label><br>
+    {% endfor %}
+    <button type="submit" formaction="/refresh_season_words" formmethod="post" formnovalidate>季語だけ別の候補を提案</button>
+  </div>
 
-      <div class="keyword-list">
-        <h3>テーマの候補（5つ）</h3>
-        {% for theme in themes %}
-          <label><input type="radio" name="selected_theme" value="{{ theme }}" required> {{ theme }}</label><br>
-        {% endfor %}
-      </div>
+  <div class="keyword-list">
+    <h3>テーマの候補（5つ）</h3>
+    {% for theme in themes %}
+      <label><input type="radio" name="selected_theme" value="{{ theme }}" required> {{ theme }}</label><br>
+    {% endfor %}
+    <button type="submit" formaction="/refresh_themes" formmethod="post" formnovalidate>テーマだけ別の候補を提案</button>
+  </div>
 
-      <button type="submit">この季語とテーマで俳句を生成</button>
-    </form>
-
-    <form action="/refresh_keywords" method="post">
-      <button type="submit">別の候補を提案する</button>
-    </form>
+  <button type="submit" formaction="/generate_haiku">この季語とテーマで俳句を生成</button>
+</form>
   </div>
 
   <div class="nav-links">
